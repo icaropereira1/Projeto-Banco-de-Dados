@@ -1,117 +1,166 @@
-# Sistema de Futebol da Copa do Mundo ⚽🏆
+# ⚽🏆 Sistema de Banco de Dados: Copa do Mundo FIFA
 
-Este repositório contém o projeto de banco de dados desenvolvido para a disciplina de **Banco de Dados**, sob a orientação do **Professor Cássio Leonardo Rodrigues**. O objetivo central do sistema é organizar de forma estruturada as informações históricas das edições da Copa do Mundo da FIFA, focando em jogadores, seleções e estatísticas de partidas.
+Este projeto apresenta a **especificação e implementação de um Banco de Dados Relacional** voltado ao registro histórico das edições da **Copa do Mundo da FIFA**.
+O sistema gerencia dados de **edições, seleções, jogadores e estatísticas detalhadas de cada partida**, permitindo consultas e análises de desempenho ao longo dos torneios.
+
+---
 
 ## 👥 Autores
 
-* 
-**João Gabriel Abreu Soares** (202302553) 
+* **João Gabriel Abreu Soares** – 202302553
+* **Ícaro Pereira Rosa Alves de Sá** – 202302547
 
+**Professor:** Cássio Leonardo Rodrigues
+**Disciplina:** Banco de Dados
 
-* 
-**Ícaro Pereira Rosa Alves de Sá** (202302547) 
+---
 
+## 📌 Sumário
 
+1. [Introdução](#1-introdução)
+2. [Requisitos do Sistema](#2-requisitos-do-sistema)
+3. [Projeto Conceitual e Lógico](#3-projeto-conceitual-e-lógico)
+4. [Normalização](#4-normalização)
+5. [Implementação (DDL)](#5-implementação-ddl)
+6. [População e Consultas (DML/DQL)](#6-população-e-consultas-dmldql)
+7. [Referências](#7-referências)
 
-## 🛠️ Tecnologias Utilizadas
+---
 
-* 
-**SGBD:** PostgreSQL 
+## 1. Introdução
 
+Desenvolvido utilizando o **SGBD PostgreSQL**, este sistema tem como objetivo organizar e armazenar informações históricas da **Copa do Mundo da FIFA**, possibilitando **análises de desempenho coletivo e individual** ao longo das edições do torneio.
 
-* 
-**Linguagem:** SQL (DDL, DML, DQL) 
+O escopo do banco de dados contempla:
 
+* Cadastro de **países-sede**;
+* Registro de **edições do torneio**;
+* Informações de **seleções nacionais e jogadores**;
+* Estatísticas técnicas, como **gols, assistências e cartões por partida**.
 
-* 
-**Modelagem:** Diagrama Entidade-Relacionamento (DER) e Mapeamento Relacional 
+---
 
+## 2. Requisitos do Sistema
 
+### 2.1 Requisitos Funcionais
 
-## 📋 Escopo e Funcionalidades
+* **Edições:** gerenciamento do ano da edição, país-sede e seleção campeã;
+* **Seleções:** cadastro das nações participantes e suas respectivas confederações;
+* **Jogadores:** registro de dados biográficos, posição, nacionalidade e vínculo com a seleção;
+* **Partidas:** controle de placar, fase do torneio (grupos, oitavas, quartas, etc.), local e data;
+* **Convocações:** histórico de clube do jogador e número da camisa em cada edição específica.
 
-O sistema abrange o registro histórico detalhado de competições passadas:
+### 2.2 Requisitos Não Funcionais (Integridade)
 
-* 
-**Edições e Seleções:** Cadastro de anos, países-sede e seleções participantes por confederação.
+* **Integridade de Entidade:**
+  Todas as tabelas possuem chaves primárias (PK) únicas.
 
+* **Integridade Referencial:**
+  Uso de chaves estrangeiras (FK) com `ON DELETE CASCADE`, garantindo consistência entre edições e registros dependentes.
 
-* 
-**Jogadores:** Registro de dados biográficos e histórico de clubes/camisas através de convocações.
+* **Integridade de Domínio:**
+  Restrições para assegurar:
 
+  * valores de placar não negativos;
+  * datas de nascimento válidas e coerentes.
 
-* 
-**Partidas:** Dados de fase, local, data e placar.
+---
 
+## 3. Projeto Conceitual e Lógico
 
-* 
-**Desempenho:** Registro de gols, assistências, minutos jogados e cartões por partida.
+O projeto foi desenvolvido com base em um **Modelo Entidade-Relacionamento (MER)**, conectando os principais elementos do torneio: edições, seleções, jogadores, partidas e estatísticas individuais.
 
+### 📘 Dicionário de Dados (Resumo)
 
+| Tabela       | Descrição                                        | Identificador  |
+| ------------ | ------------------------------------------------ | -------------- |
+| Edição       | Dados do torneio por ano                         | `ano`          |
+| Seleção      | Cadastro das nações participantes                | `id_selecao`   |
+| Jogador      | Dados biográficos dos atletas                    | `id_jogador`   |
+| Jogos        | Confrontos entre seleções                        | `id_jogo`      |
+| Convocação   | Relação N:N entre Jogador e Edição               | Chave composta |
+| Participação | Estatísticas de um jogador em um jogo específico | Chave composta |
 
-## 📐 Modelagem de Dados
+---
 
-### Modelo Entidade-Relacionamento (MER)
+## 4. Normalização
 
-O projeto conceitual define as entidades principais e seus relacionamentos, como a relação entre jogadores e jogos através da entidade associativa "Participação".
+O esquema do banco de dados foi normalizado para reduzir redundâncias e evitar inconsistências:
 
-### Normalização
+* **Primeira Forma Normal (1FN):**
+  Atributos atômicos e criação de tabelas associativas para relações muitos-para-muitos (N:N).
 
-O esquema relacional foi refinado para atender às três primeiras formas normais:
+* **Segunda Forma Normal (2FN):**
+  Eliminação de dependências parciais; estatísticas de desempenho dependem integralmente da chave composta (**jogador + jogo**).
 
-1. 
-**1FN (Atomicidade):** Uso de tabelas associativas para evitar grupos repetidos.
+* **Terceira Forma Normal (3FN):**
+  Remoção de dependências transitivas. Informações temporais, como clube e número da camisa, foram isoladas da entidade **Jogador**.
 
+---
 
-2. 
-**2FN (Dependência Total):** Atributos como gols e assistências dependem da chave primária composta (jogador + jogo).
+## 5. Implementação (DDL)
 
+```sql
+-- Criação da tabela de jogadores
+CREATE TABLE jogador (
+    id_jogador SERIAL NOT NULL,
+    nome VARCHAR(150) NOT NULL,
+    data_nascimento DATE,
+    posicao VARCHAR(50),
+    nacionalidade VARCHAR(100),
+    id_selecao INTEGER,
+    CONSTRAINT jogador_pkey PRIMARY KEY (id_jogador),
+    CONSTRAINT jogador_id_selecao_fkey FOREIGN KEY (id_selecao)
+        REFERENCES public.selecao (id_selecao)
+);
 
-3. 
-**3FN (Dependência Transitiva):** Criação da tabela `convocacao` para armazenar dados voláteis (clube e número), mantendo a tabela `jogador` apenas com dados imutáveis.
+-- Tabela de estatísticas por partida (Participação)
+CREATE TABLE participacao (
+    id_jogo INTEGER NOT NULL,
+    id_jogador INTEGER NOT NULL,
+    minutos_jogados INTEGER,
+    gols INTEGER DEFAULT 0,
+    assistencias INTEGER DEFAULT 0,
+    cartoes VARCHAR(50),
+    CONSTRAINT participacao_pkey PRIMARY KEY (id_jogo, id_jogador),
+    CONSTRAINT participacao_id_jogo_fkey FOREIGN KEY (id_jogo)
+        REFERENCES public.jogos (id_jogo),
+    CONSTRAINT participacao_id_jogador_fkey FOREIGN KEY (id_jogador)
+        REFERENCES public.jogador (id_jogador)
+);
+```
 
+---
 
+## 6. População e Consultas (DML/DQL)
 
-## 🚀 Implementação
+### 📊 Média de Gols por Jogo (Copa de 2022)
 
-### Scripts DDL (Criação)
+```sql
+SELECT AVG(gols_selecao1 + gols_selecao2) AS media_gols
+FROM public.jogos
+WHERE ano_edicao = 2022;
+```
 
-O banco de dados é composto pelas seguintes tabelas principais:
+### 🏆 Top 10 Jogadores (Gols + Assistências – Copa de 2022)
 
-* `edicao`
-* `selecao`
-* `jogador`
-* `jogos`
-* `participacao`
-* `convocacao`
-* `participacao_selecao`
+```sql
+SELECT j.nome,
+       SUM(p.gols) AS total_gols,
+       SUM(p.assistencias) AS total_assistencias
+FROM public.participacao p
+JOIN public.jogador j ON p.id_jogador = j.id_jogador
+JOIN public.jogos g ON p.id_jogo = g.id_jogo
+WHERE g.ano_edicao = 2022
+GROUP BY j.nome
+ORDER BY total_gols DESC, total_assistencias DESC
+LIMIT 10;
+```
 
-### Relatórios SQL (Exemplos)
+---
 
-O sistema permite a geração de relatórios complexos, tais como:
+## 7. Referências
 
-* Média de gols por edição específica.
-
-
-* Top 10 jogadores com mais gols e assistências em uma edição.
-
-
-* Total de cartões amarelos e vermelhos por confederação.
-
-
-* Jogos de mata-mata que terminaram em empate no tempo normal.
-
-
-
-## 📑 Referências
-
-* 
-[FIFA Official Website](https://www.fifa.com/pt) 
-
-
-* 
-[Transfermarkt](https://www.transfermarkt.com.br/) 
-
-
-* 
-[Globo Esporte (GE)](http://ge.globo.com/) 
+* **Transfermarkt** – Dados técnicos de jogadores e seleções
+* **FIFA Official** – Histórico oficial da Copa do Mundo
+* **Globo Esporte** – Estatísticas e informações complementares
